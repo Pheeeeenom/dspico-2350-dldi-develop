@@ -6,6 +6,7 @@
 #define DSPICO_CMD_GET_SD_DATA                  0xE500000000000000ull
 #define DSPICO_CMD_OPEN_NDZ_VIRTUAL             0xE600000000000000ull
 #define DSPICO_CMD_CLOSE_NDZ_VIRTUAL            0xE700000000000000ull
+#define DSPICO_CMD_POLL_OPEN_NDZ_STAT           0xEC00000000000000ull
 #define DSPICO_CMD_WRITE_SD_DATA(sector, isFirst, isLast)\
     (0xF6E10D9800000000ull | ((isFirst ? 1ULL : 0ULL) << 33) | ((isLast ? 1ULL : 0ULL) << 32) | (sector))
 
@@ -130,8 +131,19 @@ bool dldi_shutdown(void)
     return true;
 }
 
+// EC POLL_OPEN_NDZ_STAT: 0 busy, 1 ready, 2 and up an error code
+__attribute__((noinline)) static u32 pollOpenNdzStat(void)
+{
+    u32 result;
+    card_romSetCmd(DSPICO_CMD_POLL_OPEN_NDZ_STAT);
+    card_romStartXfer(MCCNT1_DIR_READ | MCCNT1_RESET_OFF | MCCNT1_CLK_6_7_MHZ | MCCNT1_LEN_4 | MCCNT1_CMD_SCRAMBLE |
+        MCCNT1_LATENCY2(4) | MCCNT1_CLOCK_SCRAMBLER | MCCNT1_READ_DATA_DESCRAMBLE | MCCNT1_LATENCY1(0), false);
+    card_romCpuRead(&result, 1);
+    return result;
+}
+
 // E6 OPEN_NDZ_VIRTUAL: 512-byte payload to the cart
-void pico_openNdzVirtual(const void* payload)
+u32 pico_openNdzVirtual(const void* payload)
 {
     card_romSetCmd(DSPICO_CMD_OPEN_NDZ_VIRTUAL);
     card_romStartXfer(MCCNT1_DIR_WRITE | MCCNT1_RESET_OFF | MCCNT1_CLK_6_7_MHZ |
@@ -142,6 +154,7 @@ void pico_openNdzVirtual(const void* payload)
     else
         card_romCpuWrite((const u32*)payload, 128);
     card_romWaitBusy();
+    return 1;
 }
 
 // E7 CLOSE_NDZ_VIRTUAL
