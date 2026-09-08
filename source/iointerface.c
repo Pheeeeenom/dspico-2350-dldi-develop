@@ -7,6 +7,7 @@
 #define DSPICO_CMD_OPEN_NDZ_VIRTUAL             0xE600000000000000ull
 #define DSPICO_CMD_CLOSE_NDZ_VIRTUAL            0xE700000000000000ull
 #define DSPICO_CMD_POLL_OPEN_NDZ_STAT           0xEC00000000000000ull
+#define DSPICO_CMD_IGR_RESET                    0xED00000000000000ull
 #define DSPICO_CMD_WRITE_SD_DATA(sector, isFirst, isLast)\
     (0xF6E10D9800000000ull | ((isFirst ? 1ULL : 0ULL) << 33) | ((isLast ? 1ULL : 0ULL) << 32) | (sector))
 
@@ -18,14 +19,20 @@ __attribute__((noinline)) static void requestSdRead(u32 sector)
     card_romWaitBusy();
 }
 
-__attribute__((noinline)) static u32 pollSdDataReady(void)
+// one status word back
+__attribute__((noinline)) static u32 cardReadStatus(u64 cmd)
 {
     u32 result;
-    card_romSetCmd(DSPICO_CMD_POLL_SD_READY);
+    card_romSetCmd(cmd);
     card_romStartXfer(MCCNT1_DIR_READ | MCCNT1_RESET_OFF | MCCNT1_CLK_6_7_MHZ | MCCNT1_LEN_4 | MCCNT1_CMD_SCRAMBLE |
         MCCNT1_LATENCY2(4) | MCCNT1_CLOCK_SCRAMBLER | MCCNT1_READ_DATA_DESCRAMBLE | MCCNT1_LATENCY1(0), false);
     card_romCpuRead(&result, 1);
     return result;
+}
+
+__attribute__((noinline)) static u32 pollSdDataReady(void)
+{
+    return cardReadStatus(DSPICO_CMD_POLL_SD_READY);
 }
 
 __attribute__((noinline)) static void getSdData(u8* dst)
@@ -134,12 +141,7 @@ bool dldi_shutdown(void)
 // EC POLL_OPEN_NDZ_STAT: 0 busy, 1 ready, 2 and up an error code
 __attribute__((noinline)) static u32 pollOpenNdzStat(void)
 {
-    u32 result;
-    card_romSetCmd(DSPICO_CMD_POLL_OPEN_NDZ_STAT);
-    card_romStartXfer(MCCNT1_DIR_READ | MCCNT1_RESET_OFF | MCCNT1_CLK_6_7_MHZ | MCCNT1_LEN_4 | MCCNT1_CMD_SCRAMBLE |
-        MCCNT1_LATENCY2(4) | MCCNT1_CLOCK_SCRAMBLER | MCCNT1_READ_DATA_DESCRAMBLE | MCCNT1_LATENCY1(0), false);
-    card_romCpuRead(&result, 1);
-    return result;
+    return cardReadStatus(DSPICO_CMD_POLL_OPEN_NDZ_STAT);
 }
 
 // E6 OPEN_NDZ_VIRTUAL: 512-byte payload to the cart
@@ -189,4 +191,10 @@ bool pico_ndzReadDecompressed(u8* dst, u32 offset, u32 length)
         length -= take;
     }
     return true;
+}
+
+// ED IGR_RESET: 1 done, 0 still working
+u32 pico_igrReset(void)
+{
+    return cardReadStatus(DSPICO_CMD_IGR_RESET);
 }
