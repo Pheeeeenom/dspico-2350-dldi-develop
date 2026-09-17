@@ -64,6 +64,7 @@ _dldi_image_start:
     .word   pico_closeNdzVirtual      - _dldi_image_start    @ +0x88: close-ndz fn
     .word   pico_ndzReadDecompressed  - _dldi_image_start    @ +0x8C: ndz_read fn
     .word   pico_igrReset             - _dldi_image_start    @ +0x90: igr-reset fn
+    .word   pico_util                 - _dldi_image_start    @ +0x94: util fn
 
 _start:
 

@@ -8,6 +8,7 @@
 #define DSPICO_CMD_CLOSE_NDZ_VIRTUAL            0xE700000000000000ull
 #define DSPICO_CMD_POLL_OPEN_NDZ_STAT           0xEC00000000000000ull
 #define DSPICO_CMD_IGR_RESET                    0xED00000000000000ull
+#define DSPICO_CMD_UTIL(op, arg)                (0xEF00000000000000ull | ((u64)((op) & 0xFF) << 48) | ((u64)((arg) & 0xFFFF) << 32))
 #define DSPICO_CMD_WRITE_SD_DATA(sector, isFirst, isLast)\
     (0xF6E10D9800000000ull | ((isFirst ? 1ULL : 0ULL) << 33) | ((isLast ? 1ULL : 0ULL) << 32) | (sector))
 
@@ -197,4 +198,10 @@ bool pico_ndzReadDecompressed(u8* dst, u32 offset, u32 length)
 u32 pico_igrReset(void)
 {
     return cardReadStatus(DSPICO_CMD_IGR_RESET);
+}
+
+// EF UTIL: op in byte 1, 16-bit argument in bytes 2-3, one word back
+u32 pico_util(u32 op, u32 arg)
+{
+    return cardReadStatus(DSPICO_CMD_UTIL(op, arg));
 }
