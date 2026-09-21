@@ -1,6 +1,6 @@
-# DSpico DLDI
+# DSpico IR DLDI
 
-Source code for the DSpico DLDI driver.
+Source code for the DSpico IR DLDI driver.
 
 ## Setup & Configuration
 
@@ -20,3 +20,4 @@ This project is licensed under the Zlib license. For details, see `LICENSE.txt`.
 ## Contributors
 - [@Gericom](https://github.com/Gericom)
 - [@lifehackerhansol](https://github.com/lifehackerhansol)
+- [@Pheeeeenom](https://github.com/Pheeeeenom)
